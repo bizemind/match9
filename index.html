@@ -93,7 +93,7 @@ input[type="text"]:focus, input[type="number"]:focus { outline: 2px solid var(--
       <button class="btn btn-primary" onclick="generateRecipe()">Match</button>
     </div>
     <div id="searcherr" class="error"></div>
-    <p class="note">Based on pigments in block print binder · 60×60 Cambric RFD.</p>
+    <p class="note">Based on Fevicryl pigments in block print binder · 60×60 Cambric RFD.</p>
   </div>
 
   <!-- Preview -->
@@ -132,6 +132,7 @@ input[type="text"]:focus, input[type="number"]:focus { outline: 2px solid var(--
       <input id="vol" type="number" inputmode="decimal" value="100" min="1" />
       <span class="unit">ml base</span>
       <button class="btn" onclick="doScale()">Scale</button>
+      <button class="btn" onclick="downloadRecipe()">Download</button>
     </div>
     <div id="pills" class="pills"></div>
   </div>
@@ -154,12 +155,15 @@ const PIGMENTS = [
    All values are ml of pigment; base is ml of white binder.
    Engine normalises to per-100ml base internally. */
 const CALIBRATION = [
-  { id:"C-003", name:"Pale Pink",     hex:"#F2EFED", base:1000, Y:1.32,  O:0,    R:0.66,    Bl:0,     P:0, Bk:0,    G:0,    Br:0 },
-  { id:"C-009", name:"Creamy Lemon",  hex:"#FEE1A1", base:700,  Y:9.24,  O:1.32, R:0,    Bl:0,     P:0, Bk:0,    G:0,    Br:0    },
-  { id:"C-029", name:"Brick Red",     hex:"#7F3336", base:1500, Y:0.66,  O:5.94, R:19.14, Bl:0.66, P:0, Bk:0, G:0,    Br:0    },
-  { id:"C-019", name:"Pastel Teal",   hex:"#9EBAB5", base:2000, Y:1.32,     O:0,    R:0,    Bl:0.66,  P:0, Bk:0,    G:0.66, Br:0 },
-  { id:"C-028", name:"Forest Fern",   hex:"#52684B", base:600,  Y:0,  O:1.32,    R:0,    Bl:0,     P:0, Bk:1.32, G:5.94, Br:1.32 },
-  { id:"C-024", name:"Midnight Slate",hex:"#364A57", base:500,  Y:0.66,     O:0,    R:0,    Bl:4.62,  P:1.32, Bk:1.98, G:0, Br:0.66 }
+  { id:"C-003", name:"Pale Pink",     hex:"#F2EFED", base:1000, Y:1.32, O:0,    R:0.66, Bl:0,    P:0,    Bk:0,    G:0,    Br:0    },
+  { id:"C-009", name:"Creamy Lemon",  hex:"#FEE1A1", base:700,  Y:9.24, O:1.32, R:0,    Bl:0,    P:0,    Bk:0,    G:0,    Br:0    },
+  { id:"C-030", name:"Lemongrass",    hex:"#D6CF8D", base:1000, Y:2.64, O:0,    R:0,    Bl:0,    P:0,    Bk:0,    G:0,    Br:0.66 },
+  { id:"C-029", name:"Brick Red",     hex:"#7F3336", base:1500, Y:0.66, O:5.94, R:19.14,Bl:0.66, P:0,    Bk:0,    G:0,    Br:0    },
+  { id:"C-011", name:"Burgundy",      hex:"#A24A63", base:500,  Y:0,    O:1.98, R:2.64, Bl:0,    P:0.66, Bk:0,    G:0,    Br:0    },
+  { id:"C-023", name:"Harbor Mist",   hex:"#A3B2BB", base:3000, Y:0,    O:0,    R:0,    Bl:0.66, P:0,    Bk:1.32, G:0.66, Br:1.32 },
+  { id:"C-019", name:"Pastel Teal",   hex:"#9EBAB5", base:2000, Y:1.32, O:0,    R:0,    Bl:0.66, P:0,    Bk:0,    G:0.66, Br:0    },
+  { id:"C-028", name:"Forest Fern",   hex:"#52684B", base:600,  Y:0,    O:1.32, R:0,    Bl:0,    P:0,    Bk:1.32, G:5.94, Br:1.32 },
+  { id:"C-024", name:"Midnight Slate",hex:"#364A57", base:500,  Y:0.66, O:0,    R:0,    Bl:4.62, P:1.32, Bk:1.98, G:0,    Br:0.66 }
 ];
 
 /* ─── Helpers ─── */
@@ -328,6 +332,37 @@ function generateRecipe() {
   document.getElementById("meta").style.display = "block";
   document.getElementById("scaleCard").style.display = "block";
   document.getElementById("pills").innerHTML = "";
+}
+
+
+function downloadRecipe() {
+  if (!current) return;
+  const base = parseFloat(document.getElementById("vol").value) || 100;
+  const factor = base / 100;
+  const hex = current.hex;
+  const lines = [
+    "Match Workshop — Creatis",
+    "========================",
+    "Target colour: " + hex,
+    "Base volume:   " + base + " ml white binder",
+    "",
+    "RECIPE",
+    "------",
+  ];
+  Object.entries(current.result.recipe).forEach(([k, v]) => {
+    const pig = PIGMENTS.find(p => p.key === k);
+    lines.push(pig.name.padEnd(10) + (v * factor).toFixed(2) + " ml");
+  });
+  lines.push("");
+  lines.push("Confidence: " + current.result.confidence + "%");
+  lines.push("Reference:  " + current.result.nearest.map(n => n.name + " (" + n.id + ")").join(" · "));
+  lines.push("");
+  lines.push("Note: Mix pigments into base thoroughly. Verify physically before bulk production.");
+  const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "recipe_" + hex.replace("#","") + ".txt";
+  a.click();
 }
 
 function doScale() {
