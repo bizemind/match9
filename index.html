@@ -155,15 +155,18 @@ const PIGMENTS = [
    All values are ml of pigment; base is ml of white binder.
    Engine normalises to per-100ml base internally. */
 const CALIBRATION = [
-  { id:"C-003", name:"Pale Pink",     hex:"#F2EFED", base:1000, Y:1.32, O:0,    R:0.66, Bl:0,    P:0,    Bk:0,    G:0,    Br:0    },
-  { id:"C-009", name:"Creamy Lemon",  hex:"#FEE1A1", base:700,  Y:9.24, O:1.32, R:0,    Bl:0,    P:0,    Bk:0,    G:0,    Br:0    },
-  { id:"C-030", name:"Lemongrass",    hex:"#D6CF8D", base:1000, Y:2.64, O:0,    R:0,    Bl:0,    P:0,    Bk:0,    G:0,    Br:0.66 },
-  { id:"C-029", name:"Brick Red",     hex:"#7F3336", base:1500, Y:0.66, O:5.94, R:19.14,Bl:0.66, P:0,    Bk:0,    G:0,    Br:0    },
-  { id:"C-011", name:"Burgundy",      hex:"#A24A63", base:500,  Y:0,    O:1.98, R:2.64, Bl:0,    P:0.66, Bk:0,    G:0,    Br:0    },
-  { id:"C-023", name:"Harbor Mist",   hex:"#A3B2BB", base:3000, Y:0,    O:0,    R:0,    Bl:0.66, P:0,    Bk:1.32, G:0.66, Br:1.32 },
-  { id:"C-019", name:"Pastel Teal",   hex:"#9EBAB5", base:2000, Y:1.32, O:0,    R:0,    Bl:0.66, P:0,    Bk:0,    G:0.66, Br:0    },
-  { id:"C-028", name:"Forest Fern",   hex:"#52684B", base:600,  Y:0,    O:1.32, R:0,    Bl:0,    P:0,    Bk:1.32, G:5.94, Br:1.32 },
-  { id:"C-024", name:"Midnight Slate",hex:"#364A57", base:500,  Y:0.66, O:0,    R:0,    Bl:4.62, P:1.32, Bk:1.98, G:0,    Br:0.66 }
+  { id:"C-003", name:"Pale Pink",     hex:"#F2EFED", base:1000, Y:1.32, O:0,    R:0.66,  Bl:0,    P:0,    Bk:0,    G:0,    Br:0    },
+  { id:"C-009", name:"Creamy Lemon",  hex:"#FEE1A1", base:700,  Y:9.24, O:1.32, R:0,     Bl:0,    P:0,    Bk:0,    G:0,    Br:0    },
+  { id:"C-030", name:"Lemongrass",    hex:"#D6CF8D", base:1000, Y:2.64, O:0,    R:0,     Bl:0,    P:0,    Bk:0,    G:0,    Br:0.66 },
+  { id:"C-029", name:"Brick Red",     hex:"#7F3336", base:1500, Y:0.66, O:5.94, R:19.14, Bl:0.66, P:0,    Bk:0,    G:0,    Br:0    },
+  { id:"C-011", name:"Burgundy",      hex:"#A24A63", base:500,  Y:0,    O:1.98, R:2.64,  Bl:0,    P:0.66, Bk:0,    G:0,    Br:0    },
+  { id:"C-015", name:"Dark Maroon",   hex:"#C2B356", base:500,  Y:0,    O:1.32, R:2.64,  Bl:0,    P:0,    Bk:1.98, G:0,    Br:5.28 },
+  { id:"C-023", name:"Harbor Mist",   hex:"#A3B2BB", base:3000, Y:0,    O:0,    R:0,     Bl:0.66, P:0,    Bk:1.32, G:0.66, Br:1.32 },
+  { id:"C-001", name:"Lilac Taupe",   hex:"#8A7EA6", base:500,  Y:0,    O:0,    R:0,     Bl:0.66, P:2.64, Bk:1.98, G:0,    Br:0    },
+  { id:"C-019", name:"Pastel Teal",   hex:"#9EBAB5", base:2000, Y:1.32, O:0,    R:0,     Bl:0.66, P:0,    Bk:0,    G:0.66, Br:0    },
+  { id:"C-028", name:"Forest Fern",   hex:"#52684B", base:600,  Y:0,    O:1.32, R:0,     Bl:0,    P:0,    Bk:1.32, G:5.94, Br:1.32 },
+  { id:"C-037", name:"Emerald Green", hex:"#007A5E", base:500,  Y:1.98, O:0,    R:0,     Bl:0,    P:0,    Bk:0,    G:5.94, Br:0.66 },
+  { id:"C-024", name:"Midnight Slate",hex:"#364A57", base:500,  Y:0.66, O:0,    R:0,     Bl:4.62, P:1.32, Bk:1.98, G:0,    Br:0.66 }
 ];
 
 /* ─── Helpers ─── */
@@ -239,11 +242,20 @@ function predict(targetHex) {
   const blended = {};
   keys.forEach(k => { blended[k] = (top[0].n[k]*w0 + top[1].n[k]*w1) / wt; });
 
-  /* Luminance scaling: darker targets need more pigment, lighter need less */
+  /* For exact calibrated matches: return raw normalised recipe — no scaling */
+  if (nearestDist < 2) {
+    const recipe = {};
+    keys.forEach(k => {
+      const v = +top[0].n[k].toFixed(2);
+      if (v >= 0.01) recipe[k] = v;
+    });
+    return { recipe, confidence: 100, nearestDist, nearest: top.map(t => ({ name:t.name, id:t.id, dist:+t.dist.toFixed(1) })) };
+  }
+
+  /* Interpolated: apply luminance scaling for darker/lighter targets */
   const blendedLum = (top[0].lum*w0 + top[1].lum*w1) / wt;
   const lumScale = blendedLum > 0 ? blendedLum / Math.max(tLum, 1) : 1;
 
-  /* Apply luminance scale and round to 2dp */
   const recipe = {};
   keys.forEach(k => {
     const v = +(blended[k] * lumScale).toFixed(2);
