@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Match by Creatis</title>
+<title>Match Workshop</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -158,12 +158,15 @@ const CALIBRATION = [
   { id:"C-003", name:"Pale Pink",     hex:"#F2EFED", base:1000, Y:1.32, O:0,    R:0.66,  Bl:0,    P:0,    Bk:0,    G:0,    Br:0    },
   { id:"C-009", name:"Creamy Lemon",  hex:"#FEE1A1", base:700,  Y:9.24, O:1.32, R:0,     Bl:0,    P:0,    Bk:0,    G:0,    Br:0    },
   { id:"C-030", name:"Lemongrass",    hex:"#D6CF8D", base:1000, Y:2.64, O:0,    R:0,     Bl:0,    P:0,    Bk:0,    G:0,    Br:0.66 },
+  { id:"C-031", name:"Winter Pear",   hex:"#899064", base:700,  Y:1.98, O:1.32, R:0,     Bl:0,    P:0,    Bk:0.66, G:1.32, Br:0.66 },
   { id:"C-029", name:"Brick Red",     hex:"#7F3336", base:1500, Y:0.66, O:5.94, R:19.14, Bl:0.66, P:0,    Bk:0,    G:0,    Br:0    },
   { id:"C-011", name:"Burgundy",      hex:"#A24A63", base:500,  Y:0,    O:1.98, R:2.64,  Bl:0,    P:0.66, Bk:0,    G:0,    Br:0    },
   { id:"C-015", name:"Dark Maroon",   hex:"#C2B356", base:500,  Y:0,    O:1.32, R:2.64,  Bl:0,    P:0,    Bk:1.98, G:0,    Br:5.28 },
   { id:"C-023", name:"Harbor Mist",   hex:"#A3B2BB", base:3000, Y:0,    O:0,    R:0,     Bl:0.66, P:0,    Bk:1.32, G:0.66, Br:1.32 },
   { id:"C-001", name:"Lilac Taupe",   hex:"#8A7EA6", base:500,  Y:0,    O:0,    R:0,     Bl:0.66, P:2.64, Bk:1.98, G:0,    Br:0    },
   { id:"C-019", name:"Pastel Teal",   hex:"#9EBAB5", base:2000, Y:1.32, O:0,    R:0,     Bl:0.66, P:0,    Bk:0,    G:0.66, Br:0    },
+  { id:"C-014", name:"Misty Teal",    hex:"#5E7875", base:1000, Y:1.32, O:0,    R:0,     Bl:0,    P:0,    Bk:0.66, G:1.32, Br:0    },
+  { id:"C-039", name:"Bayberry Blue", hex:"#3E8FB8", base:500,  Y:0,    O:0,    R:0,     Bl:1.98, P:0,    Bk:0,    G:0.66, Br:0    },
   { id:"C-028", name:"Forest Fern",   hex:"#52684B", base:600,  Y:0,    O:1.32, R:0,     Bl:0,    P:0,    Bk:1.32, G:5.94, Br:1.32 },
   { id:"C-037", name:"Emerald Green", hex:"#007A5E", base:500,  Y:1.98, O:0,    R:0,     Bl:0,    P:0,    Bk:0,    G:5.94, Br:0.66 },
   { id:"C-024", name:"Midnight Slate",hex:"#364A57", base:500,  Y:0.66, O:0,    R:0,     Bl:4.62, P:1.32, Bk:1.98, G:0,    Br:0.66 }
@@ -353,7 +356,7 @@ function downloadRecipe() {
   const factor = base / 100;
   const hex = current.hex;
   const lines = [
-    "Match Workshop — Creatis",
+    "Match — by Creatis",
     "========================",
     "Target colour: " + hex,
     "Base volume:   " + base + " ml white binder",
