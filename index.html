@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Match Workshop</title>
+<title>Match by Creatis</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -203,7 +203,7 @@ const CAL = CALIBRATION.map(c => {
   const rgb = hexToRgb(c.hex);
   return {
     ...c, rgb, hsl: rgbToHsl(rgb.r, rgb.g, rgb.b), lum: lum(rgb),
-    n: { Y:c.Y*f, O:c.O*f, R:c.R*f, Bl:c.Bl*f, P:c.P||0, Bk:c.Bk*f, G:c.G*f, Br:c.Br*f }
+    n: { Y:c.Y*f, O:c.O*f, R:c.R*f, Bl:c.Bl*f, P:c.P*f, Bk:c.Bk*f, G:c.G*f, Br:c.Br*f }
   };
 });
 
