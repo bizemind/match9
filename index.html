@@ -71,6 +71,14 @@ input[type="text"]:focus, input[type="number"]:focus { outline: 2px solid var(--
 .warning-box { display: flex; align-items: flex-start; gap: 10px; padding: 12px; background: #fff8f0; border: 1px solid #fdd5a0; border-radius: var(--radius-sm); margin-top: 1rem; font-size: 13px; line-height: 1.6; }
 @media (prefers-color-scheme: dark) { .warning-box { background: #2a1f0e; border-color: #6b4100; } }
 .calibration-count { font-size: 11px; color: var(--faint); margin-top: 6px; }
+.why-section { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.why-title { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+.why-row { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.why-row:last-child { border-bottom: none; }
+.why-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+.why-body { flex: 1; min-width: 0; }
+.why-pigment { font-size: 13px; font-weight: 600; color: var(--text); }
+.why-reason { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.5; }
 </style>
 </head>
 <body>
@@ -113,6 +121,7 @@ input[type="text"]:focus, input[type="number"]:focus { outline: 2px solid var(--
         </div>
       </div>
       <div id="rgrid" class="recipe-grid"></div>
+      <div id="why" class="why-section" style="display:none"></div>
       <div id="warning-box" class="warning-box" style="display:none">
         ⚠ <div id="warning-msg"></div>
       </div>
@@ -179,6 +188,84 @@ const CALIBRATION = [
   { id:"C-037", name:"Emerald Green",   hex:"#007A5E", base:500,  Y:1.98, O:0,    R:0,     Bl:0,    P:0,    Bk:0,    G:5.94, Br:0.66 },
   { id:"C-024", name:"Midnight Slate",  hex:"#364A57", base:500,  Y:0.66, O:0,    R:0,     Bl:4.62, P:1.32, Bk:1.98, G:0,    Br:0.66 }
 ];
+
+
+/* ─── Pigment role descriptions ─── */
+const PIGMENT_ROLES = {
+  Y: {
+    base: "Yellow is the primary warm tone carrier.",
+    high:  "A large amount drives the colour strongly toward warm yellow — dominant hue contributor.",
+    mid:   "A moderate amount shifts the base toward warmth and golden undertones.",
+    low:   "A small touch adds subtle warmth and brightens the overall tone.",
+  },
+  O: {
+    base: "Orange adds warmth and depth.",
+    high:  "A large amount creates rich, earthy warmth — key driver of the orange-red character.",
+    mid:   "A moderate amount introduces terracotta or burnt undertones.",
+    low:   "A small touch adds a coral or peach warmth without shifting the hue significantly.",
+  },
+  R: {
+    base: "Red anchors the warm, saturated depth.",
+    high:  "A large amount makes red the dominant hue — drives intensity and darkness significantly.",
+    mid:   "A moderate amount adds richness and pushes the colour toward rose or brick tones.",
+    low:   "A small amount adds a subtle flush or warmth, often used to counteract coolness.",
+  },
+  Bl: {
+    base: "Blue introduces cool, desaturating depth.",
+    high:  "A large amount is the primary hue driver — creates strong blue or teal character.",
+    mid:   "A moderate amount cools the colour and shifts it toward blue-grey or teal.",
+    low:   "A small touch desaturates and cools without dominating — adds muted, dusty quality.",
+  },
+  P: {
+    base: "Purple adds cool, violet undertones.",
+    high:  "A large amount drives the colour toward violet or dusty purple.",
+    mid:   "A moderate amount adds depth and a purple-grey shift to the overall tone.",
+    low:   "A small touch introduces subtle violet undertones, deepening without oversaturating.",
+  },
+  Bk: {
+    base: "Black deepens value and mutes saturation.",
+    high:  "A large amount significantly darkens the colour and reduces vibrancy.",
+    mid:   "A moderate amount adds depth and pushes toward earthy, muted tones.",
+    low:   "A small touch subtly deepens the colour without noticeably shifting the hue.",
+  },
+  G: {
+    base: "Green anchors earthy or cool-neutral tones.",
+    high:  "A large amount is the dominant hue contributor — drives the colour toward green.",
+    mid:   "A moderate amount introduces olive, sage, or teal character.",
+    low:   "A small touch cools warm tones and adds an earthy, natural quality.",
+  },
+  Br: {
+    base: "Brown grounds the colour with earthy warmth.",
+    high:  "A large amount anchors the colour in warm, dark, earthy territory.",
+    mid:   "A moderate amount adds an organic, muted warmth — common in naturalistic tones.",
+    low:   "A small touch adds depth and a grounding warmth without shifting the hue strongly.",
+  },
+};
+
+function getPigmentReason(key, mlPer100, totalPigment) {
+  const role = PIGMENT_ROLES[key];
+  if (!role) return "";
+  const share = totalPigment > 0 ? mlPer100 / totalPigment : 0;
+  const level = share >= 0.5 ? "high" : share >= 0.2 ? "mid" : "low";
+  return role.base + " " + role[level];
+}
+
+function buildWhySection(recipe) {
+  const entries = Object.entries(recipe);
+  const total = entries.reduce((s,[,v]) => s+v, 0);
+  const sorted = [...entries].sort((a,b) => b[1]-a[1]);
+  return sorted.map(([k, v]) => {
+    const pig = PIGMENTS.find(p => p.key === k);
+    const reason = getPigmentReason(k, v, total);
+    return `<div class="why-row">
+      <div class="why-dot" style="background:${pig.hex}"></div>
+      <div class="why-body">
+        <div class="why-pigment">${pig.name} — ${v} ml per 100 ml base</div>
+        <div class="why-reason">${reason}</div>
+      </div>
+    </div>`;
+  }).join("");
+}
 
 /* ─── Helpers ─── */
 function hexToRgb(hex) {
@@ -334,6 +421,11 @@ function generateRecipe() {
     </div>`;
   }).join("");
 
+  /* Why section */
+  const whyEl = document.getElementById("why");
+  whyEl.innerHTML = '<div class="why-title">Why this recipe</div>' + buildWhySection(result.recipe);
+  whyEl.style.display = "block";
+
   /* Warning for low confidence */
   const wbox = document.getElementById("warning-box");
   if (result.confidence < 40) {
@@ -375,6 +467,15 @@ function downloadRecipe() {
   Object.entries(current.result.recipe).forEach(([k, v]) => {
     const pig = PIGMENTS.find(p => p.key === k);
     lines.push(pig.name.padEnd(10) + (v * factor).toFixed(2) + " ml");
+  });
+  lines.push("");
+  lines.push("WHY THIS RECIPE");
+  lines.push("---------------");
+  const totalPig = Object.values(current.result.recipe).reduce((s,v)=>s+v,0);
+  Object.entries(current.result.recipe).sort((a,b)=>b[1]-a[1]).forEach(([k,v]) => {
+    const pig = PIGMENTS.find(p=>p.key===k);
+    const reason = getPigmentReason(k, v, totalPig);
+    lines.push(pig.name + " (" + (v*factor).toFixed(2) + " ml): " + reason);
   });
   lines.push("");
   lines.push("Confidence: " + current.result.confidence + "%");
