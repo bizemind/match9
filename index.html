@@ -71,6 +71,22 @@ input[type="text"]:focus, input[type="number"]:focus { outline: 2px solid var(--
 .warning-box { display: flex; align-items: flex-start; gap: 10px; padding: 12px; background: #fff8f0; border: 1px solid #fdd5a0; border-radius: var(--radius-sm); margin-top: 1rem; font-size: 13px; line-height: 1.6; }
 @media (prefers-color-scheme: dark) { .warning-box { background: #2a1f0e; border-color: #6b4100; } }
 .calibration-count { font-size: 11px; color: var(--faint); margin-top: 6px; }
+.system-tabs { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+.sys-tab { font-size:12px; font-weight:500; padding:5px 12px; border-radius:var(--radius-pill);
+  border:1px solid var(--border); background:var(--chip); color:var(--muted); cursor:pointer;
+  -webkit-tap-highlight-color:transparent; }
+.sys-tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+.system-input { display:none; }
+.system-input.visible { display:block; }
+.lookup-row { display:flex; gap:8px; align-items:center; }
+.lookup-row input { flex:1; min-width:0; }
+.lookup-result { font-size:12px; color:var(--muted); margin-top:6px; display:none; }
+.lookup-result.show { display:block; }
+.lookup-swatch { display:inline-block; width:12px; height:12px; border-radius:3px;
+  border:1px solid var(--border); vertical-align:middle; margin-right:5px; }
+.disclaimer { font-size:11px; color:var(--faint); margin-top:8px; line-height:1.5;
+  padding:8px 10px; background:var(--chip); border-radius:var(--radius-sm);
+  border-left:3px solid var(--border); }
 .why-section { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
 .why-title { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
 .why-row { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid var(--border); }
@@ -91,15 +107,51 @@ input[type="text"]:focus, input[type="number"]:focus { outline: 2px solid var(--
     <div class="primaries-grid" id="primariesGrid"></div>
   </div>
 
-  <!-- Hex input -->
+  <!-- Colour input -->
   <div class="card">
     <div class="card-label">Target colour</div>
-    <div class="input-row">
-      <input type="color" id="colorPicker" value="#fee1a1" oninput="onPickerChange(this.value)" />
-      <input type="text" class="hex-input" id="hexInput" placeholder="#FEE1A1" maxlength="7"
-        oninput="onHexType(this.value)" onkeydown="if(event.key==='Enter') generateRecipe()" />
-      <button class="btn btn-primary" onclick="generateRecipe()">Match</button>
+
+    <!-- System tabs -->
+    <div class="system-tabs">
+      <button class="sys-tab active" onclick="switchTab('hex')">Hex</button>
+      <button class="sys-tab" onclick="switchTab('fb')">Farrow &amp; Ball</button>
+      <button class="sys-tab" onclick="switchTab('bm')">Benjamin Moore</button>
     </div>
+
+    <!-- Hex input -->
+    <div id="tab-hex" class="system-input visible">
+      <div class="input-row">
+        <input type="color" id="colorPicker" value="#fee1a1" oninput="onPickerChange(this.value)" />
+        <input type="text" class="hex-input" id="hexInput" placeholder="#FEE1A1" maxlength="7"
+          oninput="onHexType(this.value)" onkeydown="if(event.key==='Enter') generateRecipe()" />
+        <button class="btn btn-primary" onclick="generateRecipe()">Match</button>
+      </div>
+    </div>
+
+    <!-- Farrow & Ball input -->
+    <div id="tab-fb" class="system-input">
+      <div class="lookup-row">
+        <input type="text" id="fbInput" placeholder="Name or number e.g. Hague Blue / 30"
+          oninput="onLookupType('fb',this.value)"
+          onkeydown="if(event.key==='Enter') resolveAndMatch('fb')" />
+        <button class="btn btn-primary" onclick="resolveAndMatch('fb')">Match</button>
+      </div>
+      <div id="fb-result" class="lookup-result"></div>
+      <p class="disclaimer">Farrow &amp; Ball colours are defined for wall paint. Hex values are screen approximations — the physical colour may differ. Recipe accuracy depends on how closely your target matches a calibrated colour in the system.</p>
+    </div>
+
+    <!-- Benjamin Moore input -->
+    <div id="tab-bm" class="system-input">
+      <div class="lookup-row">
+        <input type="text" id="bmInput" placeholder="Name or code e.g. Hale Navy / HC-154"
+          oninput="onLookupType('bm',this.value)"
+          onkeydown="if(event.key==='Enter') resolveAndMatch('bm')" />
+        <button class="btn btn-primary" onclick="resolveAndMatch('bm')">Match</button>
+      </div>
+      <div id="bm-result" class="lookup-result"></div>
+      <p class="disclaimer">Benjamin Moore colours are defined for wall paint. Hex values are screen approximations — the physical colour may differ. Recipe accuracy depends on how closely your target matches a calibrated colour in the system.</p>
+    </div>
+
     <div id="searcherr" class="error"></div>
     <p class="note">Based on color pigments in block print binder · 60×60 Cambric RFD.</p>
   </div>
@@ -273,6 +325,132 @@ function buildWhySection(recipe) {
   }).join("");
 }
 
+
+/* ─── Farrow & Ball lookup ─── */
+const FB_COLORS = [
+  ["All White","9911","#F4F0E8"],["Pointing","2003","#F4EFE2"],["Wimborne White","239","#F5F0E1"],
+  ["James White","2010","#EDE9D8"],["New White","59","#EDE5CC"],["Strong White","2001","#EBE6D5"],
+  ["Slipper Satin","2004","#EDE0C4"],["Elephant's Breath","229","#CEC2B2"],["Blackened","2011","#DDE0DB"],
+  ["Purbeck Stone","275","#C8BFB0"],["Mole's Breath","276","#928880"],["Worsted","257","#9B9188"],
+  ["Hardwick White","5","#D6D0C0"],["Cornforth White","228","#CEC9BC"],["Bone","15","#DDD5BD"],
+  ["String","8","#D9CDB4"],["Clunch","2009","#DBD4C1"],["Joa's White","226","#EAE0CC"],
+  ["Pavilion Gray","242","#B8B5AD"],["Lamp Room Gray","88","#C2BFBA"],["Brassica","271","#7B6B7A"],
+  ["Pelt","254","#54445C"],["Brinjal","222","#4A3245"],["Mahogany","36","#5C2D2A"],
+  ["Blazer","212","#C03028"],["Rectory Red","217","#8B2020"],["Eating Room Red","43","#8C2020"],
+  ["Incarnadine","248","#9C2828"],["Hague Blue","30","#2C4A5C"],["Stiffkey Blue","281","#3A4A58"],
+  ["Pitch Blue","220","#344858"],["Inchyra Blue","289","#485C68"],["Stone Blue","86","#607888"],
+  ["Parma Gray","27","#ABBBC4"],["Oval Room Blue","85","#98A8B0"],["Borrowed Light","235","#C8D8DC"],
+  ["Skylight","205","#C0D0D8"],["Lulworth Blue","89","#98B8C8"],["Cook's Blue","237","#6888A0"],
+  ["Green Blue","84","#7898A0"],["Teresa's Green","236","#98A890"],["Mists","282","#C0C8B8"],
+  ["Lichen","19","#9898A0"],["Calke Green","80","#6A7A60"],["Saxon Green","80","#788870"],
+  ["Card Room Green","79","#889870"],["Malachite","45","#509050"],["Yeabridge Green","287","#688060"],
+  ["Folly Green","76","#789068"],["Pigeon","25","#9898A8"],["Plummett","272","#888890"],
+  ["Ammonite","274","#C0B8B0"],["Charleston Gray","243","#888880"],["Down Pipe","26","#585C60"],
+  ["Off-Black","57","#3A3C38"],["Pitch Black","256","#282820"],["Railings","31","#383C40"],
+  ["Studio Green","93","#485040"],["Green Smoke","47","#787860"],["Mouse's Back","40","#7A7060"],
+  ["Dead Salmon","28","#C89080"],["Setting Plaster","231","#DEB898"],["Middleton Pink","245","#E0B0A8"],
+  ["Nancy's Blushes","278","#E8B8B0"],["Cinder Rose","246","#D09090"],["Calamine","230","#E8C0B8"],
+  ["Mallow","62","#C88898"],["Sulking Room Pink","295","#C89098"],["Rangwali","296","#C86880"],
+  ["India Yellow","66","#E0A840"],["Babouche","223","#E8B020"],["Churlish Green","231","#A8A870"],
+  ["Olive","13","#888850"],["Hay","37","#C8B060"],["Sudbury Yellow","51","#E8C870"],
+  ["Dayroom Yellow","233","#E8C870"],["Yellow Ground","218","#E0C040"],["Citron","74","#D8C040"],
+  ["Dimpse","277","#9898A0"],["Mizzle","266","#A8A898"],["Cornforth White","228","#CEC9BC"],
+  ["Shaded White","201","#D8D0B8"],["Drop Cloth","283","#C8B8A0"],["Elephant's Breath","229","#CEC2B2"],
+  ["Mole's Breath","276","#928880"],["Bespoke Grey","88","#C8C5C0"],["Worsted","257","#9B9188"],
+];
+
+/* ─── Benjamin Moore lookup ─── */
+const BM_COLORS = [
+  ["White","OC-17","#F4F2EC"],["Chantilly Lace","OC-65","#F6F4EF"],["Simply White","OC-117","#F7F4ED"],
+  ["Cloud White","OC-130","#EEE9DC"],["Linen White","912","#F0E8D8"],["White Dove","OC-17","#F3F0E8"],
+  ["Swiss Coffee","OC-45","#EFE8D8"],["Navajo White","PM-6","#F0E0C0"],["Pale Oak","OC-20","#DDD4C0"],
+  ["Revere Pewter","HC-172","#C0B8A8"],["Stonington Gray","HC-170","#B8B8B0"],["Edgecomb Gray","HC-173","#CEC4B0"],
+  ["Balanced Beige","976","#C8B8A0"],["Lenox Tan","HC-44","#C8B090"],["Antique White","OC-83","#E8D8B8"],
+  ["Muslin","OC-12","#E8DAC0"],["Bleeker Beige","HC-80","#C0B090"],["Carrington Beige","HC-93","#D0B898"],
+  ["Manchester Tan","HC-81","#C8A878"],["Ashley Gray","HC-87","#B8A888"],["Rockport Gray","HC-105","#A8A098"],
+  ["Sea Salt","CSP-95","#B8C8C0"],["Hale Navy","HC-154","#485870"],["Newburyport Blue","HC-155","#506878"],
+  ["Van Deusen Blue","HC-156","#486080"],["Wedgewood Gray","HC-146","#7898B0"],["Blue Nova","825","#8898C0"],
+  ["Forget Me Not","677","#A0B8D0"],["Distant Gray","2124-70","#C8D0D8"],["Gray Owl","OC-52","#C8C8C0"],
+  ["Pale Smoke","2115-60","#C0C8D0"],["Pale Blue","2066-70","#C0D0E0"],["Iceberg","2122-50","#A0C0D0"],
+  ["Whipple Blue","HC-152","#7898B8"],["Newburg Green","HC-158","#507068"],["Teal Ocean","2049-30","#205860"],
+  ["Peacock Blue","2049-40","#307080"],["Surf Blue","2059-50","#508098"],["Harbour Fog","2062-60","#98B0C0"],
+  ["Mountain Air","2159-60","#A8C0C8"],["Iced Marble","2158-70","#C8D8D8"],["Tranquility","AF-490","#B8D0D0"],
+  ["Aegean Teal","2136-40","#508080"],["Raindance","WT-26","#8098A8"],["Dusty Miller","CSP-520","#A8A8B8"],
+  ["Gray","2121-10","#383830"],["Kendall Charcoal","HC-166","#585850"],["Iron Mountain","2134-30","#504840"],
+  ["Black","2132-10","#282020"],["Midnight","2129-30","#383040"],["Aura White","PM-1","#F0EDE5"],
+  ["Chestertown Buff","HC-9","#E0C888"],["Hawthorne Yellow","HC-4","#E8C860"],["Sunburst","314","#E8C040"],
+  ["Citrus Blast","2017-30","#D89820"],["Golden Straw","2152-50","#E0C068"],["Pale Straw","2153-60","#E8D090"],
+  ["Classic Mauve","2115-40","#B89098"],["Muted Berry","2072-40","#906878"],["Raspberry Mousse","2080-40","#A06070"],
+  ["Coral Gables","CSP-1170","#D88878"],["Salmon Peach","021","#E8A888"],["Peach Sorbet","2173-50","#F0B898"],
+  ["Venetian Rose","CSP-1165","#D07878"],["Moroccan Red","2083-20","#883030"],["Heritage Red","HC-181","#903030"],
+  ["Terracotta","2175-30","#B05838"],["Earthen Jug","2164-20","#884828"],["Caramel","2164-30","#C07838"],
+  ["Warm Caramel","2165-30","#C07830"],["Cinnamon","2175-20","#904030"],["Burnt Sienna","2175-10","#703020"],
+  ["Tarrytown Green","HC-134","#788858"],["Rosemary Green","HC-142","#689060"],["Saybrook Sage","HC-114","#98A880"],
+  ["Aganthus Green","CSP-840","#88A070"],["Fernwood Green","CSP-930","#789060"],["Herb Garden","CSP-910","#708050"],
+  ["Forest Green","2047-10","#305030"],["Hunter Green","406","#385838"],["Jade Garden","CSP-880","#508060"],
+  ["Guilford Green","HC-116","#A0A880"],["Putnam Ivory","HC-39","#E0D0A0"],["Windham Cream","HC-6","#E8D498"],
+  ["Pale Moon","OC-108","#EAE0C0"],["Lemon Sorbet","2019-60","#F0E890"],["Hawkins Gold","HC-2","#E0C040"],
+];
+
+/* ─── Tab switching ─── */
+function switchTab(tab) {
+  ['hex','fb','bm'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('visible', t===tab);
+    document.querySelectorAll('.sys-tab')[['hex','fb','bm'].indexOf(t)].classList.toggle('active', t===tab);
+  });
+}
+
+/* ─── Lookup logic ─── */
+function lookupColor(system, query) {
+  const db = system === 'fb' ? FB_COLORS : BM_COLORS;
+  const q = query.trim().toLowerCase();
+  if (!q) return null;
+  // Exact code match first
+  let match = db.find(c => c[1].toLowerCase() === q);
+  // Then exact name match
+  if (!match) match = db.find(c => c[0].toLowerCase() === q);
+  // Then partial name match
+  if (!match) match = db.find(c => c[0].toLowerCase().includes(q));
+  // Then partial code match
+  if (!match) match = db.find(c => c[1].toLowerCase().includes(q));
+  return match || null;
+}
+
+function onLookupType(system, val) {
+  const resultEl = document.getElementById(system+'-result');
+  const match = lookupColor(system, val);
+  if (match) {
+    resultEl.innerHTML = `<span class="lookup-swatch" style="background:${match[2]}"></span>
+      <strong>${match[0]}</strong> · ${match[1]} · ${match[2]}`;
+    resultEl.classList.add('show');
+  } else {
+    resultEl.classList.remove('show');
+  }
+}
+
+function resolveAndMatch(system) {
+  const input = document.getElementById(system+'-input') ||
+                document.getElementById(system+'Input');
+  const val = input.value.trim();
+  const match = lookupColor(system, val);
+  const err = document.getElementById('searcherr');
+  if (!match) {
+    err.textContent = 'Colour not found. Try a name (e.g. Hague Blue) or code (e.g. 30 / HC-154).';
+    return;
+  }
+  err.textContent = '';
+  // Set hex input and trigger match
+  document.getElementById('hexInput').value = match[2];
+  document.getElementById('colorPicker').value = match[2];
+  const lbl = document.getElementById('previewLabel');
+  document.getElementById('preview').style.background = match[2];
+  lbl.textContent = match[0] + ' · ' + match[2];
+  lbl.style.display = 'block';
+  const result = predict(match[2]);
+  current = { hex: match[2], result, sourceName: match[0], sourceCode: match[1], sourceSystem: system };
+  showResult(match[2], result, match[0] + ' · ' + match[1]);
+}
+
 /* ─── Helpers ─── */
 function hexToRgb(hex) {
   const n = parseInt(hex.replace('#',''), 16);
@@ -382,6 +560,59 @@ function onHexType(val) {
   if (/^#[0-9a-fA-F]{6}$/.test(val)) document.getElementById("colorPicker").value = val;
 }
 
+function showResult(hex, result, sourceLabel) {
+  document.getElementById("preview").style.background = hex;
+  const lbl = document.getElementById("previewLabel");
+  lbl.textContent = sourceLabel ? sourceLabel + " · " + hex : hex;
+  lbl.style.display = "block";
+
+  document.getElementById("swatch").style.background = hex;
+  const isExact = result.nearestDist < 2;
+  document.getElementById("cname").textContent = isExact ? "Exact match found" : "Predicted recipe";
+  const pigCount = Object.keys(result.recipe).length;
+  document.getElementById("csub").textContent = isExact
+    ? `Calibrated · ${pigCount} pigment${pigCount!==1?'s':''}`
+    : `Interpolated from ${result.nearest[0].name} + ${result.nearest[1].name}`;
+  document.getElementById("chex").textContent = sourceLabel ? sourceLabel + " · " + hex : hex;
+
+  const confColor = result.confidence >= 70 ? "#22c55e" : result.confidence >= 40 ? "#fbbf24" : "#f87171";
+  const confLabel = result.confidence >= 70 ? "Good confidence" : result.confidence >= 40 ? "Moderate confidence" : "Low confidence — verify physically";
+  document.getElementById("cquality").innerHTML =
+    `<span class="match-quality"><span class="quality-dot" style="background:${confColor}"></span>${confLabel}</span>`;
+
+  document.getElementById("rgrid").innerHTML = Object.entries(result.recipe).map(([k, v]) => {
+    const pig = PIGMENTS.find(p => p.key === k);
+    return `<div class="recipe-cell">
+      <div class="recipe-bar" style="background:${pig.hex}"></div>
+      <div class="recipe-label">${pig.name}</div>
+      <div class="recipe-val">${v}<span class="recipe-unit"> ml</span></div>
+    </div>`;
+  }).join("");
+
+  const whyEl = document.getElementById("why");
+  whyEl.innerHTML = '<div class="why-title">Why this recipe</div>' + buildWhySection(result.recipe);
+  whyEl.style.display = "block";
+
+  const wbox = document.getElementById("warning-box");
+  if (result.confidence < 40) {
+    document.getElementById("warning-msg").textContent =
+      "This colour is far from any calibrated recipe. The suggestion is a rough starting point — physical testing is essential.";
+    wbox.style.display = "flex";
+  } else { wbox.style.display = "none"; }
+
+  document.getElementById("confFill").style.width = result.confidence + "%";
+  document.getElementById("confFill").style.background = confColor;
+  document.getElementById("confPct").textContent = result.confidence + "%";
+
+  document.getElementById("nearestRow").innerHTML =
+    `Reference: <span>${result.nearest[0].name}</span> (${result.nearest[0].id}) · <span>${result.nearest[1].name}</span> (${result.nearest[1].id})`;
+
+  document.getElementById("empty").style.display = "none";
+  document.getElementById("meta").style.display = "block";
+  document.getElementById("scaleCard").style.display = "block";
+  document.getElementById("pills").innerHTML = "";
+}
+
 function generateRecipe() {
   const err = document.getElementById("searcherr");
   err.textContent = "";
@@ -392,67 +623,9 @@ function generateRecipe() {
     return;
   }
   val = val.toUpperCase();
-
-  /* Preview */
-  document.getElementById("preview").style.background = val;
-  const lbl = document.getElementById("previewLabel");
-  lbl.textContent = val; lbl.style.display = "block";
-
   const result = predict(val);
   current = { hex: val, result };
-
-  /* Meta */
-  document.getElementById("swatch").style.background = val;
-  const isExact = result.nearestDist < 2;
-  document.getElementById("cname").textContent = isExact ? "Exact match found" : "Predicted recipe";
-  const pigCount = Object.keys(result.recipe).length;
-  document.getElementById("csub").textContent = isExact
-    ? `Calibrated · ${pigCount} pigment${pigCount!==1?'s':''}`
-    : `Interpolated from ${result.nearest[0].name} + ${result.nearest[1].name}`;
-  document.getElementById("chex").textContent = val;
-
-  /* Quality badge */
-  const confColor = result.confidence >= 70 ? "#22c55e" : result.confidence >= 40 ? "#fbbf24" : "#f87171";
-  const confLabel = result.confidence >= 70 ? "Good confidence" : result.confidence >= 40 ? "Moderate confidence" : "Low confidence — verify physically";
-  document.getElementById("cquality").innerHTML =
-    `<span class="match-quality"><span class="quality-dot" style="background:${confColor}"></span>${confLabel}</span>`;
-
-  /* Recipe grid */
-  document.getElementById("rgrid").innerHTML = Object.entries(result.recipe).map(([k, v]) => {
-    const pig = PIGMENTS.find(p => p.key === k);
-    return `<div class="recipe-cell">
-      <div class="recipe-bar" style="background:${pig.hex}"></div>
-      <div class="recipe-label">${pig.name}</div>
-      <div class="recipe-val">${v}<span class="recipe-unit"> ml</span></div>
-    </div>`;
-  }).join("");
-
-  /* Why section */
-  const whyEl = document.getElementById("why");
-  whyEl.innerHTML = '<div class="why-title">Why this recipe</div>' + buildWhySection(result.recipe);
-  whyEl.style.display = "block";
-
-  /* Warning for low confidence */
-  const wbox = document.getElementById("warning-box");
-  if (result.confidence < 40) {
-    document.getElementById("warning-msg").textContent =
-      "This colour is far from any calibrated recipe. The suggestion is a rough starting point — physical testing is essential.";
-    wbox.style.display = "flex";
-  } else { wbox.style.display = "none"; }
-
-  /* Confidence bar */
-  document.getElementById("confFill").style.width = result.confidence + "%";
-  document.getElementById("confFill").style.background = confColor;
-  document.getElementById("confPct").textContent = result.confidence + "%";
-
-  /* Nearest reference */
-  document.getElementById("nearestRow").innerHTML =
-    `Reference: <span>${result.nearest[0].name}</span> (${result.nearest[0].id}) · <span>${result.nearest[1].name}</span> (${result.nearest[1].id})`;
-
-  document.getElementById("empty").style.display = "none";
-  document.getElementById("meta").style.display = "block";
-  document.getElementById("scaleCard").style.display = "block";
-  document.getElementById("pills").innerHTML = "";
+  showResult(val, result, null);
 }
 
 
@@ -461,6 +634,7 @@ function downloadRecipe() {
   const base = parseFloat(document.getElementById("vol").value) || 100;
   const factor = base / 100;
   const hex = current.hex;
+  const sourceLine = current.sourceName ? current.sourceSystem.toUpperCase().replace("FB","Farrow & Ball").replace("BM","Benjamin Moore") + ": " + current.sourceName + " (" + current.sourceCode + ")" : null;
   const lines = [
     "Match Workshop — Creatis",
     "========================",
