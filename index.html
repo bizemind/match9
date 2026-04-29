@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Match by Creatis</title>
+<title>Match Workshop</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -99,7 +99,7 @@ input[type="text"]:focus, input[type="number"]:focus { outline: 2px solid var(--
 </head>
 <body>
 <div class="app">
-  <div class="header"><h1>Match</h1><span>by Creatis</span></div>
+  <div class="header"><h1>Match</h1><span>Workshop Version</span></div>
 
   <!-- Primaries reference -->
   <div class="card">
@@ -126,6 +126,7 @@ input[type="text"]:focus, input[type="number"]:focus { outline: 2px solid var(--
           oninput="onHexType(this.value)" onkeydown="if(event.key==='Enter') generateRecipe()" />
         <button class="btn btn-primary" onclick="generateRecipe()">Match</button>
       </div>
+      <p class="disclaimer">Have a physical colour chip or swatch? A handheld colour sensor can read it and give you a hex code. The <strong>Nix Mini</strong> works well on fabric and paint surfaces — press it against your chip, copy the hex, and paste it above.</p>
     </div>
 
     <!-- Farrow & Ball input -->
@@ -636,7 +637,7 @@ function downloadRecipe() {
   const hex = current.hex;
   const sourceLine = current.sourceName ? current.sourceSystem.toUpperCase().replace("FB","Farrow & Ball").replace("BM","Benjamin Moore") + ": " + current.sourceName + " (" + current.sourceCode + ")" : null;
   const lines = [
-    "Match Workshop — Creatis",
+    "Match, Workshop Version",
     "========================",
     "Target colour: " + hex,
     "Base volume:   " + base + " ml white binder",
